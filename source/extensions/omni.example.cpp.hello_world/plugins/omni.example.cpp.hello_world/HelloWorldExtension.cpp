@@ -21,6 +21,8 @@ const struct carb::PluginImplDesc pluginImplDesc = { "omni.example.cpp.hello_wor
 
 CARB_PLUGIN_IMPL_DEPS(carb::eventdispatcher::IEventDispatcher)
 
+using namespace carb::extras;
+
 namespace omni
 {
 namespace example
@@ -35,6 +37,14 @@ namespace hello_world
 // later disabled, a matching 'onShutdown()' call will be made on the object.
 class ExampleCppHelloWorldExtension : public omni::ext::IExt
 {
+    //@TEST
+    Timer TestStaticTimer; 
+    const double TimeInterval = 1.0;
+    double TimeIntervalElapsed = 0.0;
+    double TimeElapsedLast = 0;
+    double FramePerSecond = 0;
+    //@TEST //
+    
 public:
     void onStartup(const char* extId) override
     {
@@ -50,6 +60,9 @@ public:
                 omni::kit::kGlobalEventPostUpdate,
                 [this](const carb::eventdispatcher::Event& e) { onUpdate(); });
         }
+
+        //@TEST
+        TestStaticTimer.start();
     }
 
     void onShutdown() override
@@ -59,9 +72,27 @@ public:
         // Unsubscribe from update events.
         m_updateEventsSubscription.reset();
     }
-
+    
     void onUpdate()
     {
+        //@TEST
+        double elapsedTimeUS = (double)TestStaticTimer.getElapsedTime(Timer::Scale::eMicroseconds);
+        double elapsedTimeMS =  elapsedTimeUS / (double)1000;
+        double elapsedSecond = elapsedTimeMS / (double)1000;
+
+        double tickTime = elapsedSecond - TimeElapsedLast;
+        TimeIntervalElapsed += tickTime;
+        
+        double fps = (double)1 / tickTime;
+
+        if (TimeIntervalElapsed >= TimeInterval)
+        {
+            printf(" >>>>>>>> test ticktime: %lf / fps: %lf / fps tick time: %lf .\n", elapsedSecond , fps, tickTime);
+            TimeIntervalElapsed = 0;
+        }
+        TimeElapsedLast = elapsedSecond;
+        //@TEST //
+        
         if (m_updateCounter % 1000 == 0)
         {
             printf("Hello from the omni.example.cpp.hello_world extension! %d updates counted.\n", m_updateCounter);
